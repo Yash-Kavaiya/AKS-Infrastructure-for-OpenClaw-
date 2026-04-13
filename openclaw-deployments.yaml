@@ -1,0 +1,343 @@
+---
+# Namespace for Team Alpha
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openclaw-alpha
+  labels:
+    team: alpha
+    app: openclaw
+---
+# Namespace for Team Beta
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openclaw-beta
+  labels:
+    team: beta
+    app: openclaw
+---
+# Namespace for Team Gamma
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openclaw-gamma
+  labels:
+    team: gamma
+    app: openclaw
+---
+# Namespace for Team Delta
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openclaw-delta
+  labels:
+    team: delta
+    app: openclaw
+---
+# ConfigMap for OpenClaw configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openclaw-config
+  namespace: openclaw-alpha
+data:
+  config.json: |
+    {
+      "team": "alpha",
+      "environment": "production",
+      "logLevel": "info"
+    }
+---
+# Deployment for Team Alpha
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openclaw-alpha
+  namespace: openclaw-alpha
+  labels:
+    app: openclaw
+    team: alpha
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: openclaw
+      team: alpha
+  template:
+    metadata:
+      labels:
+        app: openclaw
+        team: alpha
+    spec:
+      nodeSelector:
+        workload: openclaw-app
+      containers:
+      - name: openclaw
+        image: <your-acr>.azurecr.io/openclaw:latest  # Replace with your image
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: TEAM_NAME
+          value: "alpha"
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+# Service for Team Alpha
+apiVersion: v1
+kind: Service
+metadata:
+  name: openclaw-alpha-service
+  namespace: openclaw-alpha
+spec:
+  type: LoadBalancer
+  selector:
+    app: openclaw
+    team: alpha
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+---
+# Horizontal Pod Autoscaler for Team Alpha
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: openclaw-alpha-hpa
+  namespace: openclaw-alpha
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: openclaw-alpha
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+# Deployment for Team Beta
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openclaw-beta
+  namespace: openclaw-beta
+  labels:
+    app: openclaw
+    team: beta
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: openclaw
+      team: beta
+  template:
+    metadata:
+      labels:
+        app: openclaw
+        team: beta
+    spec:
+      nodeSelector:
+        workload: openclaw-app
+      containers:
+      - name: openclaw
+        image: <your-acr>.azurecr.io/openclaw:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: TEAM_NAME
+          value: "beta"
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+# Service for Team Beta
+apiVersion: v1
+kind: Service
+metadata:
+  name: openclaw-beta-service
+  namespace: openclaw-beta
+spec:
+  type: LoadBalancer
+  selector:
+    app: openclaw
+    team: beta
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+---
+# Deployment for Team Gamma (Compute-Intensive)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openclaw-gamma
+  namespace: openclaw-gamma
+  labels:
+    app: openclaw
+    team: gamma
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: openclaw
+      team: gamma
+  template:
+    metadata:
+      labels:
+        app: openclaw
+        team: gamma
+    spec:
+      nodeSelector:
+        workload: ai-processing  # Deployed to compute-optimized nodes
+      containers:
+      - name: openclaw
+        image: <your-acr>.azurecr.io/openclaw:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: TEAM_NAME
+          value: "gamma"
+        - name: WORKLOAD_TYPE
+          value: "compute-intensive"
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+---
+# Service for Team Gamma
+apiVersion: v1
+kind: Service
+metadata:
+  name: openclaw-gamma-service
+  namespace: openclaw-gamma
+spec:
+  type: LoadBalancer
+  selector:
+    app: openclaw
+    team: gamma
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+---
+# Deployment for Team Delta (Memory-Intensive)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openclaw-delta
+  namespace: openclaw-delta
+  labels:
+    app: openclaw
+    team: delta
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: openclaw
+      team: delta
+  template:
+    metadata:
+      labels:
+        app: openclaw
+        team: delta
+    spec:
+      nodeSelector:
+        workload: data-intensive  # Deployed to memory-optimized nodes
+      containers:
+      - name: openclaw
+        image: <your-acr>.azurecr.io/openclaw:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: TEAM_NAME
+          value: "delta"
+        - name: WORKLOAD_TYPE
+          value: "memory-intensive"
+        resources:
+          requests:
+            memory: "8Gi"
+            cpu: "1000m"
+          limits:
+            memory: "16Gi"
+            cpu: "2000m"
+---
+# Service for Team Delta
+apiVersion: v1
+kind: Service
+metadata:
+  name: openclaw-delta-service
+  namespace: openclaw-delta
+spec:
+  type: LoadBalancer
+  selector:
+    app: openclaw
+    team: delta
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http

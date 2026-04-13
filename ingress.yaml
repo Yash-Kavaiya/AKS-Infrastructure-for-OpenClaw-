@@ -1,0 +1,117 @@
+---
+# Install NGINX Ingress Controller first with:
+# helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+# helm repo update
+# helm install nginx-ingress ingress-nginx/ingress-nginx --namespace ingress-nginx --create-namespace
+
+# Ingress for Team Alpha
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openclaw-alpha-ingress
+  namespace: openclaw-alpha
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - alpha.openclaw.yourdomain.com
+    secretName: openclaw-alpha-tls
+  rules:
+  - host: alpha.openclaw.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: openclaw-alpha-service
+            port:
+              number: 80
+---
+# Ingress for Team Beta
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openclaw-beta-ingress
+  namespace: openclaw-beta
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - beta.openclaw.yourdomain.com
+    secretName: openclaw-beta-tls
+  rules:
+  - host: beta.openclaw.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: openclaw-beta-service
+            port:
+              number: 80
+---
+# Ingress for Team Gamma
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openclaw-gamma-ingress
+  namespace: openclaw-gamma
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - gamma.openclaw.yourdomain.com
+    secretName: openclaw-gamma-tls
+  rules:
+  - host: gamma.openclaw.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: openclaw-gamma-service
+            port:
+              number: 80
+---
+# Ingress for Team Delta
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openclaw-delta-ingress
+  namespace: openclaw-delta
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - delta.openclaw.yourdomain.com
+    secretName: openclaw-delta-tls
+  rules:
+  - host: delta.openclaw.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: openclaw-delta-service
+            port:
+              number: 80

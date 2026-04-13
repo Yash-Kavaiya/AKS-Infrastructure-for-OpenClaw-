@@ -1,0 +1,188 @@
+---
+# Prometheus Operator for metrics collection
+# Install with:
+# helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+# helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring --create-namespace
+
+# ServiceMonitor for OpenClaw Alpha
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: openclaw-alpha-metrics
+  namespace: openclaw-alpha
+  labels:
+    app: openclaw
+    team: alpha
+spec:
+  selector:
+    matchLabels:
+      app: openclaw
+      team: alpha
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+---
+# ServiceMonitor for OpenClaw Beta
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: openclaw-beta-metrics
+  namespace: openclaw-beta
+  labels:
+    app: openclaw
+    team: beta
+spec:
+  selector:
+    matchLabels:
+      app: openclaw
+      team: beta
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+---
+# ServiceMonitor for OpenClaw Gamma
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: openclaw-gamma-metrics
+  namespace: openclaw-gamma
+  labels:
+    app: openclaw
+    team: gamma
+spec:
+  selector:
+    matchLabels:
+      app: openclaw
+      team: gamma
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+---
+# ServiceMonitor for OpenClaw Delta
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: openclaw-delta-metrics
+  namespace: openclaw-delta
+  labels:
+    app: openclaw
+    team: delta
+spec:
+  selector:
+    matchLabels:
+      app: openclaw
+      team: delta
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+---
+# Grafana Dashboard ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openclaw-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  openclaw-dashboard.json: |
+    {
+      "dashboard": {
+        "title": "OpenClaw Multi-Team Dashboard",
+        "panels": [
+          {
+            "title": "Total Pods by Team",
+            "targets": [
+              {
+                "expr": "count(kube_pod_info{namespace=~\"openclaw-.*\"}) by (namespace)"
+              }
+            ]
+          },
+          {
+            "title": "CPU Usage by Team",
+            "targets": [
+              {
+                "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"openclaw-.*\"}[5m])) by (namespace)"
+              }
+            ]
+          },
+          {
+            "title": "Memory Usage by Team",
+            "targets": [
+              {
+                "expr": "sum(container_memory_working_set_bytes{namespace=~\"openclaw-.*\"}) by (namespace)"
+              }
+            ]
+          },
+          {
+            "title": "Request Rate by Team",
+            "targets": [
+              {
+                "expr": "sum(rate(http_requests_total{namespace=~\"openclaw-.*\"}[5m])) by (namespace)"
+              }
+            ]
+          }
+        ]
+      }
+    }
+---
+# AlertManager Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openclaw-alerts
+  namespace: monitoring
+data:
+  alerts.yaml: |
+    groups:
+    - name: openclaw
+      interval: 30s
+      rules:
+      - alert: HighPodMemory
+        expr: |
+          (sum(container_memory_working_set_bytes{namespace=~"openclaw-.*"}) 
+          by (pod, namespace) / 
+          sum(container_spec_memory_limit_bytes{namespace=~"openclaw-.*"}) 
+          by (pod, namespace)) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage in {{ $labels.namespace }}/{{ $labels.pod }}"
+          description: "Pod {{ $labels.pod }} in {{ $labels.namespace }} is using {{ $value | humanizePercentage }} of memory limit"
+      
+      - alert: HighPodCPU
+        expr: |
+          (sum(rate(container_cpu_usage_seconds_total{namespace=~"openclaw-.*"}[5m])) 
+          by (pod, namespace) /
+          sum(container_spec_cpu_quota{namespace=~"openclaw-.*"} / container_spec_cpu_period{namespace=~"openclaw-.*"})
+          by (pod, namespace)) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage in {{ $labels.namespace }}/{{ $labels.pod }}"
+          description: "Pod {{ $labels.pod }} in {{ $labels.namespace }} is using {{ $value | humanizePercentage }} of CPU limit"
+      
+      - alert: PodCrashLooping
+        expr: rate(kube_pod_container_status_restarts_total{namespace=~"openclaw-.*"}[5m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pod crash looping in {{ $labels.namespace }}"
+          description: "Pod {{ $labels.pod }} in {{ $labels.namespace }} is crash looping"
+      
+      - alert: NodePoolScaling
+        expr: |
+          sum(kube_node_info{node=~"aks-production-.*"}) < 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Production node pool below minimum"
+          description: "Production node pool has {{ $value }} nodes, below recommended minimum of 5"

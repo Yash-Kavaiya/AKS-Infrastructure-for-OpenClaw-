@@ -1,0 +1,186 @@
+---
+# Service Account for Team Alpha
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: openclaw-alpha-sa
+  namespace: openclaw-alpha
+---
+# Role for Team Alpha (namespace-scoped permissions)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: openclaw-alpha-role
+  namespace: openclaw-alpha
+rules:
+- apiGroups: ["", "apps", "batch"]
+  resources: ["pods", "services", "deployments", "jobs", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get", "list"]
+---
+# RoleBinding for Team Alpha
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openclaw-alpha-rolebinding
+  namespace: openclaw-alpha
+subjects:
+- kind: ServiceAccount
+  name: openclaw-alpha-sa
+  namespace: openclaw-alpha
+roleRef:
+  kind: Role
+  name: openclaw-alpha-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Service Account for Team Beta
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: openclaw-beta-sa
+  namespace: openclaw-beta
+---
+# Role for Team Beta
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: openclaw-beta-role
+  namespace: openclaw-beta
+rules:
+- apiGroups: ["", "apps", "batch"]
+  resources: ["pods", "services", "deployments", "jobs", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get", "list"]
+---
+# RoleBinding for Team Beta
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openclaw-beta-rolebinding
+  namespace: openclaw-beta
+subjects:
+- kind: ServiceAccount
+  name: openclaw-beta-sa
+  namespace: openclaw-beta
+roleRef:
+  kind: Role
+  name: openclaw-beta-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Service Account for Team Gamma
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: openclaw-gamma-sa
+  namespace: openclaw-gamma
+---
+# Role for Team Gamma
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: openclaw-gamma-role
+  namespace: openclaw-gamma
+rules:
+- apiGroups: ["", "apps", "batch"]
+  resources: ["pods", "services", "deployments", "jobs", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get", "list"]
+---
+# RoleBinding for Team Gamma
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openclaw-gamma-rolebinding
+  namespace: openclaw-gamma
+subjects:
+- kind: ServiceAccount
+  name: openclaw-gamma-sa
+  namespace: openclaw-gamma
+roleRef:
+  kind: Role
+  name: openclaw-gamma-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Service Account for Team Delta
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: openclaw-delta-sa
+  namespace: openclaw-delta
+---
+# Role for Team Delta
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: openclaw-delta-role
+  namespace: openclaw-delta
+rules:
+- apiGroups: ["", "apps", "batch"]
+  resources: ["pods", "services", "deployments", "jobs", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get", "list"]
+---
+# RoleBinding for Team Delta
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openclaw-delta-rolebinding
+  namespace: openclaw-delta
+subjects:
+- kind: ServiceAccount
+  name: openclaw-delta-sa
+  namespace: openclaw-delta
+roleRef:
+  kind: Role
+  name: openclaw-delta-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# NetworkPolicy for Team Alpha (isolate namespace traffic)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: openclaw-alpha-netpol
+  namespace: openclaw-alpha
+spec:
+  podSelector:
+    matchLabels:
+      app: openclaw
+      team: alpha
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    - podSelector:
+        matchLabels:
+          app: openclaw
+          team: alpha
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
